@@ -1,12 +1,13 @@
-全国の潮位を表示する場合はhttps://masakunnn.github.io/choui/
-北海道の潮位を表示する場合はhttps://masakunnn.github.io/choui/?area=hokkaido
-東北の潮位を表示する場合はhttps://masakunnn.github.io/choui/?area=tohoku
-関東甲信越の潮位を表示する場合はhttps://masakunnn.github.io/choui/?area=kanto
-北陸の潮位を表示する場合はhttps://masakunnn.github.io/choui/?area=hokuriku
-東海の潮位を表示する場合はhttps://masakunnn.github.io/choui/?area=tokai
-近畿の潮位を表示する場合はhttps://masakunnn.github.io/choui/?area=kinki
-中国の潮位を表示する場合はhttps://masakunnn.github.io/choui/?area=chugoku
-四国の潮位を表示する場合はhttps://masakunnn.github.io/choui/?area=sikoku
-九州の潮位を表示する場合はhttps://masakunnn.github.io/choui/?area=kyusyu
-沖縄の潮位を表示する場合はhttps://masakunnn.github.io/choui/?area=okinawa
-を開いてください
+| 対象地域 | URL |
+| :--- | :--- |
+| **全国** | https://masakunnn.github.io/choui/ |
+| **北海道** | https://masakunnn.github.io/choui/?area=hokkaido |
+| **東北** | https://masakunnn.github.io/choui/?area=tohoku |
+| **関東甲信越** | https://masakunnn.github.io/choui/?area=kanto |
+| **北陸** | https://masakunnn.github.io/choui/?area=hokuriku |
+| **東海** | https://masakunnn.github.io/choui/?area=tokai |
+| **近畿** | https://masakunnn.github.io/choui/?area=kinki |
+| **中国** | https://masakunnn.github.io/choui/?area=chugoku |
+| **四国** | https://masakunnn.github.io/choui/?area=sikoku |
+| **九州** | https://masakunnn.github.io/choui/?area=kyusyu |
+| **沖縄** | https://masakunnn.github.io/choui/?area=okinawa |
