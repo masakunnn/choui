@@ -1,0 +1,258 @@
+@font-face {
+    font-family: 'UD-ShinGo-DeBold';
+    src: url('../A-OTF UD新ゴ Pr6N-DeBold.otf') format('opentype'),
+         url('../assets/FOT-RodinNTLGPro-DB.otf') format('opentype');
+}
+
+@font-face {
+    font-family: 'BIZUDPGothic-Bold';
+    src: url('../BIZUDPGothic-Bold.ttf') format('truetype'),
+         url('../assets/FOT-RodinNTLGPro-B.otf') format('opentype');
+}
+
+* { box-sizing: border-box; }
+
+body { 
+    background-color: #01162a; 
+    cursor: url('../Image/c1.png') 5 2, url('../c1.png') 5 2, auto;
+    margin: 0; 
+    color: white; 
+    font-family: 'UD-ShinGo-DeBold', 'BIZUDPGothic-Bold', sans-serif; 
+    overflow-y: scroll; 
+}
+.grid-container { display: grid; grid-template-columns: repeat(4, 1fr); width: 90%; margin: 40px auto; gap: 7px 10px; }
+
+.graph-box { 
+    position: relative; 
+    width: 100%; 
+    aspect-ratio: 16 / 9; 
+    background-color: #0f2742; 
+    overflow: hidden; 
+    cursor: url('../Image/c2.png') 9 2, url('../c2.png') 9 2, auto;
+    z-index: 1;
+    border: none;
+    outline: 5px solid transparent; 
+    outline-offset: -5px;
+}
+
+.graph-box:not(.expanded):hover {
+    outline: 5px solid #ffffff; 
+    cursor: url('../Image/c2.png') 5 2, url('../c2.png') 5 2, auto;
+    transition: none !important; 
+}
+
+.graph-box:not(.expanded) {
+    transition: none !important; 
+}
+.graph-box.image-box:hover { 
+    outline-color: transparent !important; 
+    cursor: url('../Image/c1.png') 5 2, url('../c1.png') 5 2, auto !important;
+}
+
+.custom-tooltip {
+    position: absolute;
+    background-color: rgba(243, 243, 243, 0.9); 
+    color: #1e2d32;
+    padding: 0;
+    border-radius: 0;
+    z-index: 9999;
+    font-family: 'UD-ShinGo-DeBold', sans-serif;
+    white-space: nowrap; 
+    outline: 7px solid #1e2d32;
+    transform-origin: top left;
+    overflow: visible;
+
+    pointer-events: none !important; 
+    opacity: 0;
+    visibility: hidden;
+    display: block !important; 
+    transition: opacity 0.2s ease-out;
+}
+
+.custom-tooltip.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.tooltip-time {
+    background-color: #1e2d32;
+    color: white;
+    font-size: 50px;
+    font-weight: normal;
+    padding: 25px 50px;
+    margin: 0;
+    text-align: left;
+    line-height: 1.2;
+    
+    border: none;
+    outline: none;
+    display: block;
+    margin-bottom: -1px; 
+}
+
+.tooltip-row {
+    display: flex;
+    align-items: center;
+    font-size: 58px;
+    padding: 20px 25px 0px 25px;
+    background-color: #f3f3f3; 
+}
+
+.tooltip-color-box {
+    width: 52px; 
+    height: 52px;
+    margin-right: 18px; 
+    flex-shrink: 0;
+    box-sizing: border-box; 
+}
+.tooltip-color-box.dashed {
+    background-color: transparent !important; 
+    border: 6px dashed #b103e1; 
+}
+
+.custom-tooltip::after {
+    content: "";
+    position: absolute;
+    left: -76px; 
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 28px 71px 28px 0; 
+    border-color: transparent #1e2d32 transparent transparent;
+    z-index: -1; 
+}
+
+.custom-tooltip::before {
+    content: "";
+    position: absolute;
+    left: -61px; 
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 20px 55px 20px 0; 
+    border-color: transparent rgba(243, 243, 243, 0.85) transparent transparent;
+    z-index: 1;
+}
+
+    .tooltip-time, .tooltip-row, .tooltip-value-container {
+        line-height: 1.2; 
+    }
+
+    .tooltip-row, 
+    .tooltip-value-container {
+        display: flex;
+        align-items: center;
+        background-color: transparent !important; 
+        border: none;
+    }
+
+    .tooltip-value-container {
+        text-align: right;
+        background-color: transparent;
+        padding: 0px    150px 30px 0px; 
+        margin-top: 10px;
+        border: none; 
+    }
+
+    .tooltip-value {
+        margin-left: auto;
+        font-size: 100px;
+        font-weight: 900;
+    }
+    .tooltip-unit {
+        font-size: 50px;
+        margin-left: 5px;
+    
+    /* ▼ 下に動かす調整（プラスの数値で下へ移動） */
+        transform: translateY(15px); /* お好みの位置になるよう数値を調整してください */
+}
+
+.graph-box.expanded {
+    position: fixed;
+    z-index: 2000;
+    outline-color: transparent !important; 
+    background-color: #0f2742;
+    cursor: url('../Image/c1.png') 5 2, url('../c1.png') 5 2, auto;
+    will-change: top, left, width, height;
+}
+
+.placeholder { 
+    width: 100%; 
+    aspect-ratio: 16 / 9; 
+    visibility: hidden;
+}
+
+.scaling-layer { 
+    position: absolute; 
+    top: 0; left: 0; 
+    width: 3840px; height: 2160px; 
+    transform-origin: 0 0; 
+    pointer-events: auto; 
+    z-index: 10; 
+    transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1); 
+}
+
+.station-label, .agency-label, .legend-box {
+    pointer-events: none;
+}
+
+.station-label { position: absolute; top: 120px; width: 100%; text-align: center; font-size: 154px; font-weight: 900; white-space: nowrap; line-height: 1; }
+.station-label::after { content: " 潮位"; }
+
+.agency-label { 
+    position: absolute; 
+    top: 1975px; 
+    right: 250px; 
+    font-size: 65px; 
+    font-weight: 500; 
+    color: #aaaaaa; 
+    text-align: right;
+    z-index: 30; 
+    pointer-events: none;
+    line-height: 1;
+}
+
+.chart-layer { 
+    position: absolute; 
+    top: 418px; 
+    left: 180px; 
+    width: 3480px; 
+    height: 1400px; 
+}
+
+canvas { 
+    display: block;
+    width: 100%; 
+    height: 100%; 
+}
+
+.legend-box {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    z-index: 20;
+    opacity: 1;
+}
+.legend-box img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.image-box img { width: 100%; height: 100%; object-fit: contain; }
+
+#scrim {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.85);
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
