@@ -1,0 +1,12 @@
+全国の潮位を表示する場合はhttps://masakunnn.github.io/choui/
+北海道の潮位を表示する場合はhttps://masakunnn.github.io/choui/?area=hokkaido
+東北の潮位を表示する場合はhttps://masakunnn.github.io/choui/?area=tohoku
+関東甲信越の潮位を表示する場合はhttps://masakunnn.github.io/choui/?area=kanto
+北陸の潮位を表示する場合はhttps://masakunnn.github.io/choui/?area=hokuriku
+東海の潮位を表示する場合はhttps://masakunnn.github.io/choui/?area=tokai
+近畿の潮位を表示する場合はhttps://masakunnn.github.io/choui/?area=kinki
+中国の潮位を表示する場合はhttps://masakunnn.github.io/choui/?area=chugoku
+四国の潮位を表示する場合はhttps://masakunnn.github.io/choui/?area=sikoku
+九州の潮位を表示する場合はhttps://masakunnn.github.io/choui/?area=kyusyu
+沖縄の潮位を表示する場合はhttps://masakunnn.github.io/choui/?area=okinawa
+を開いてください
