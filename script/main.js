@@ -100,28 +100,19 @@ function getAreaNameFromCodes(codes) {
     return map[codes[0]] || '全国';
 }
 
-// 全画面表示時と通常時の位置調整処理
+// 画面最上部にヘッダーをずっと固定表示（position: fixed）する位置調整処理
 function adjustHeaderPosition() {
     const container = document.getElementById('header-image-container');
     if (!container) return;
 
-    const isFullscreen = !!document.fullscreenElement;
-
-    if (isFullscreen) {
-        container.style.position = 'fixed';
-        container.style.top = '0';
-        container.style.left = '50%';
-        container.style.transform = 'translateX(-50%)';
-        container.style.marginTop = '0px';
-        container.style.zIndex = '100';
-    } else {
-        container.style.position = 'relative';
-        container.style.top = '0';
-        container.style.left = '0';
-        container.style.transform = 'none';
-        container.style.marginTop = '0px';
-        container.style.zIndex = '100';
-    }
+    container.style.position = 'fixed';
+    container.style.top = '0';
+    container.style.left = '0';
+    container.style.width = '100%';
+    container.style.transform = 'none';
+    container.style.marginTop = '0px';
+    container.style.zIndex = '1000';
+    container.style.backgroundColor = '#01162a';
 }
 
 // 画面上部にヘッダー画像（header_全国.png など）を表示・更新する処理
@@ -132,7 +123,7 @@ function updateHeaderImage(selectedAreaCodes) {
     if (!container) {
         container = document.createElement('div');
         container.id = 'header-image-container';
-        container.style.cssText = 'width: 100%; text-align: center; margin: 0 auto; position: relative; top: 0; left: 0; z-index: 100;';
+        container.style.cssText = 'width: 100%; text-align: center; margin: 0 auto; position: fixed; top: 0; left: 0; z-index: 1000; background-color: #01162a;';
         const grid = document.getElementById('tohoku-grid');
         if (grid && grid.parentNode) {
             grid.parentNode.insertBefore(container, grid);
