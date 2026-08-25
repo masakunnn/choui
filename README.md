@@ -1,4 +1,4 @@
-**Chromeで開かないとPCが爆発します！(?)**
+# **Chromeで開かないとPCが爆発します！(?)**
 | 対象地域 | URL |
 | :--- | :--- |
 | **全国** | https://masakunnn.github.io/choui/ |
