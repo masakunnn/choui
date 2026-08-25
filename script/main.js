@@ -312,6 +312,34 @@ function setupHousouCanvas(img, container) {
     });
 }
 
+// 全画面状態の変化を監視し、全画面時は header と housou.png を非表示＆当たり判定0にする処理
+function handleFullscreenChange() {
+    const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
+    const headerContainer = document.getElementById('header-image-container');
+    const housouContainer = document.getElementById('housou-image-container');
+
+    if (headerContainer) {
+        if (isFullscreen) {
+            headerContainer.style.display = 'none';
+            headerContainer.style.pointerEvents = 'none';
+        } else {
+            headerContainer.style.display = 'block';
+            headerContainer.style.pointerEvents = 'none';
+        }
+    }
+
+    if (housouContainer) {
+        if (isFullscreen) {
+            housouContainer.style.display = 'none';
+            housouContainer.style.pointerEvents = 'none';
+        } else {
+            housouContainer.style.display = 'block';
+        }
+    }
+
+    adjustHeaderPosition();
+}
+
 function triggerHousouMode() {
     // 全画面表示に移行
     if (!document.fullscreenElement) {
@@ -704,7 +732,8 @@ async function init(selectedAreaCodes = ALL_AREA_CODES) {
             adjustHeaderPosition();
             updateScales();
         });
-        document.addEventListener('fullscreenchange', adjustHeaderPosition);
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
         setTimeout(updateScales, 100);
     } catch (e) {
         console.error("初期化中にエラーが発生しました:", e);
