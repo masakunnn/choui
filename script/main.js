@@ -100,7 +100,7 @@ function getAreaNameFromCodes(codes) {
     return map[codes[0]] || '全国';
 }
 
-// 全画面表示時と通常時（タブバー表示時）の位置調整処理
+// 全画面表示時と通常時の位置調整処理
 function adjustHeaderPosition() {
     const container = document.getElementById('header-image-container');
     if (!container) return;
@@ -108,7 +108,6 @@ function adjustHeaderPosition() {
     const isFullscreen = !!document.fullscreenElement;
 
     if (isFullscreen) {
-        // 全画面表示のときはFHD基準で画面中央にぴったり配置
         container.style.position = 'fixed';
         container.style.top = '0';
         container.style.left = '50%';
@@ -116,13 +115,12 @@ function adjustHeaderPosition() {
         container.style.marginTop = '0px';
         container.style.zIndex = '100';
     } else {
-        // タブバーが出ている通常時はタブバー分位置を少し下げる
         container.style.position = 'relative';
         container.style.top = '0';
         container.style.left = '0';
         container.style.transform = 'none';
-        container.style.marginTop = '40px'; // タブバー表示時の下げる量（必要に応じて調整可能）
-        container.style.zIndex = 'auto';
+        container.style.marginTop = '0px';
+        container.style.zIndex = '100';
     }
 }
 
@@ -134,16 +132,43 @@ function updateHeaderImage(selectedAreaCodes) {
     if (!container) {
         container = document.createElement('div');
         container.id = 'header-image-container';
-        container.style.cssText = 'width: 100%; text-align: center; margin: 0 auto; transition: margin-top 0.2s ease;';
+        container.style.cssText = 'width: 100%; text-align: center; margin: 0 auto; position: relative; top: 0; left: 0; z-index: 100;';
         const grid = document.getElementById('tohoku-grid');
         if (grid && grid.parentNode) {
             grid.parentNode.insertBefore(container, grid);
-        } else {
+        } else if (document.body && document.body.firstChild) {
             document.body.insertBefore(container, document.body.firstChild);
+        } else if (document.body) {
+            document.body.appendChild(container);
         }
     }
 
-    container.innerHTML = `<img id="header-img" src="Image/Header/header_${areaName}.png" alt="ヘッダー ${areaName}" style="width: 100%; max-width: 100%; height: auto; display: block; margin: 0 auto;" onerror="this.onerror=null; this.src='header_${areaName}.png';">`;
+    const paths = [
+        `Image/Header/header_${areaName}.png`,
+        `Image/header_${areaName}.png`,
+        `header_${areaName}.png`,
+        `Image/Header/header_${areaName}.PNG`,
+        `Image/header_${areaName}.PNG`,
+        `header_${areaName}.PNG`,
+        `Image/Header/header.png`,
+        `Image/header.png`,
+        `header.png`
+    ];
+
+    let pathIdx = 0;
+    container.innerHTML = `<img id="header-img" src="${paths[0]}" alt="ヘッダー ${areaName}" style="width: 100%; max-width: 100%; height: auto; display: block; margin: 0 auto;">`;
+
+    const img = document.getElementById('header-img');
+    if (img) {
+        img.onerror = function() {
+            pathIdx++;
+            if (pathIdx < paths.length) {
+                this.src = paths[pathIdx];
+            } else {
+                this.onerror = null;
+            }
+        };
+    }
 
     adjustHeaderPosition();
 }
