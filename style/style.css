@@ -17,7 +17,7 @@ body {
     cursor: url('../Image/c1.png') 5 2, url('../c1.png') 5 2, auto;
     margin: 0; 
     color: white; 
-    font-family: 'UD-ShinGo-DeBold', 'BIZUDPGothic-Bold', sans-serif; 
+    font-family: sans-serif; 
     overflow-y: scroll; 
 }
 .grid-container { display: grid; grid-template-columns: repeat(4, 1fr); width: 90%; margin: 40px auto; gap: 7px 10px; }
@@ -56,7 +56,7 @@ body {
     padding: 0;
     border-radius: 0;
     z-index: 9999;
-    font-family: 'UD-ShinGo-DeBold', sans-serif;
+    font-family: sans-serif;
     white-space: nowrap; 
     outline: 7px solid #1e2d32;
     transform-origin: top left;
@@ -161,7 +161,7 @@ body {
     .tooltip-value {
         margin-left: auto;
         font-size: 100px;
-        font-weight: 900;
+        font-weight: normal;
     }
     .tooltip-unit {
         font-size: 50px;
@@ -200,7 +200,7 @@ body {
     pointer-events: none;
 }
 
-.station-label { position: absolute; top: 120px; width: 100%; text-align: center; font-size: 154px; font-weight: 900; white-space: nowrap; line-height: 1; }
+.station-label { position: absolute; top: 120px; width: 100%; text-align: center; font-size: 154px; font-weight: normal; white-space: nowrap; line-height: 1; font-family: sans-serif; }
 .station-label::after { content: " 潮位"; }
 
 .agency-label { 
@@ -214,6 +214,7 @@ body {
     z-index: 30; 
     pointer-events: none;
     line-height: 1;
+    font-family: sans-serif;
 }
 
 .chart-layer { 
