@@ -197,170 +197,6 @@ function closeExpanded() {
     }, CONFIG.animDuration);
 }
 
-// 複数プロキシを順番に試す堅牢な fetch 関数
-async function fetchWithProxy(targetUrl) {
-    const proxies = [
-        url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-        url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-        url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
-    ];
-
-    for (const proxyGen of proxies) {
-        try {
-            const pUrl = proxyGen(targetUrl);
-            const res = await fetch(pUrl);
-            if (res.ok) {
-                const text = await res.text();
-                if (text && text.length > 500) return text;
-            }
-        } catch (e) {}
-    }
-    return null;
-}
-
-async function fetchRankingData(mode) {
-    try {
-        const targetUrl = `https://weather.yahoo.co.jp/weather/amedas/ranking/?rank=${mode}`;
-        const text = await fetchWithProxy(targetUrl);
-        if (!text) return [];
-        
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(text, 'text/html');
-        const rows = doc.querySelectorAll('tr');
-        
-        const dataList = [];
-        rows.forEach(row => {
-            const cols = row.querySelectorAll('td');
-            if (cols.length >= 4) {
-                const rankVal = cols[0].textContent.trim();
-                if (!/^\d+$/.test(rankVal)) return;
-                
-                const aTag = cols[1].querySelector('a');
-                if (!aTag) return;
-                
-                const fullText = aTag.textContent.trim();
-                const prefSpan = aTag.querySelector('span');
-                const pref = prefSpan ? prefSpan.textContent.trim().replace(/[（）]/g, '') : '';
-                const name = fullText.replace(prefSpan ? prefSpan.textContent.trim() : '', '').trim();
-                
-                const valText = cols[2].textContent.trim().replace('mm', '').replace('℃', '').trim();
-                const val = parseFloat(valText);
-                
-                const timeRaw = cols[3].textContent.trim();
-                const timeStart = timeRaw.split('〜')[0];
-                const [t_h, t_m] = timeStart.split(':').map(Number);
-                
-                dataList.push({ rank: rankVal, pref, name, value: val, time_h: t_h, time_m: t_m });
-            }
-        });
-        return dataList.slice(0, 8);
-    } catch (e) {
-        return [];
-    }
-}
-
-function loadImage(src) {
-    return new Promise((resolve) => {
-        const img = new Image();
-        img.onload = () => resolve(img);
-        img.onerror = () => resolve(null);
-        img.src = src;
-    });
-}
-
-async function createRankingCardDataUrl(mode, titleType, updateTimeStr) {
-    const dataList = await fetchRankingData(mode);
-    if (!dataList || dataList.length === 0) return null;
-
-    const canvas = document.createElement('canvas');
-    canvas.width = 1920;
-    canvas.height = 1080;
-    const ctx = canvas.getContext('2d');
-
-    const templateImg = await loadImage('template.png');
-    if (templateImg) {
-        ctx.drawImage(templateImg, 0, 0, 1920, 1080);
-    } else {
-        ctx.fillStyle = '#282828';
-        ctx.fillRect(0, 0, 1920, 1080);
-    }
-
-    let titleText = '', fillColor = '', unit = '';
-    if (titleType === 'high') {
-        titleText = `全国 きょうの最高気温 「高い順」 ${updateTimeStr}現在`;
-        fillColor = 'rgb(200, 30, 30)';
-        unit = '℃';
-    } else if (titleType === 'low') {
-        titleText = `全国 きょうの最低気温 「低い順」 ${updateTimeStr}現在`;
-        fillColor = 'rgb(30, 80, 200)';
-        unit = '℃';
-    } else {
-        titleText = `全国 きょうの一時間降水量 「多い順」 ${updateTimeStr}現在`;
-        fillColor = 'rgb(30, 100, 210)';
-        unit = 'mm';
-    }
-
-    ctx.fillStyle = '#ffffff';
-    ctx.font = `bold 80px ${CONFIG.fontName}`;
-    ctx.fillText(titleText, 110, 130);
-
-    const startX = 130, startY = 225, lineHeight = 103, maxGraphWidth = 1795;
-    const topVal = dataList[0].value;
-
-    for (let i = 0; i < dataList.length; i++) {
-        const item = dataList[i];
-        const y = startY + (i * lineHeight);
-
-        let widthRatio = 0;
-        if (titleType === 'high' || titleType === 'precip') {
-            const maxRef = topVal > 0 ? topVal : 1.0;
-            widthRatio = item.value / maxRef;
-        } else {
-            const lastVal = dataList[dataList.length - 1].value;
-            let valRange = lastVal - topVal;
-            if (valRange <= 0) valRange = 1.0;
-            widthRatio = (lastVal - item.value) / valRange;
-        }
-
-        let width = Math.max(50, Math.min(Math.floor(widthRatio * maxGraphWidth), maxGraphWidth));
-
-        ctx.fillStyle = fillColor;
-        ctx.beginPath();
-        if (ctx.roundRect) ctx.roundRect(65, y - 6, width, 91, 8);
-        else ctx.rect(65, y - 6, width, 91);
-        ctx.fill();
-
-        if (titleType === 'high') {
-            const val = item.value;
-            let iconNames = [];
-            if (val >= 41.9) iconNames = ['酷暑.png', 'superhigh.png'];
-            else if (val >= 40.0) iconNames = ['酷暑.png'];
-            else if (val >= 35.0) iconNames = ['猛暑.png'];
-            else if (val >= 30.0) iconNames = ['真夏.png'];
-            else if (val >= 25.0) iconNames = ['夏.png'];
-
-            for (const iconName of iconNames) {
-                const iconImg = await loadImage(iconName);
-                if (iconImg) ctx.drawImage(iconImg, 0, i * lineHeight);
-            }
-        }
-
-        const h = String(item.time_h).padStart(2, '0');
-        const m = String(item.time_m).padStart(2, '0');
-        const mainText = `${item.rank}. ${item.pref} ${item.name} ${h}:${m}`;
-        const valText = `${item.value}${unit}`;
-
-        ctx.fillStyle = '#ffffff';
-        ctx.font = `60px ${CONFIG.fontName}`;
-        ctx.fillText(mainText, startX, y + 62);
-
-        ctx.font = `bold 68px ${CONFIG.fontName}`;
-        ctx.fillText(valText, 1550, y + 62);
-    }
-
-    return canvas.toDataURL('image/png');
-}
-
 async function init(selectedAreaCodes = ALL_AREA_CODES) {
     try {
         if (!selectedAreaCodes || !Array.isArray(selectedAreaCodes) || selectedAreaCodes.length === 0) {
@@ -384,7 +220,8 @@ async function init(selectedAreaCodes = ALL_AREA_CODES) {
         const yyyymmdd = yyyy + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
         const mmdd = String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
 
-        const zureStations = ["久慈", "宮古", "釜石", "大船渡", "鮎川", "石巻", "仙台新港", "小名浜", "鹿島"]; 
+// 地盤変動による「ずれ」表示対象の観測所一覧
+const zureStations = ["久慈", "宮古", "釜石", "大船渡", "鮎川", "石巻", "仙台新港", "小名浜", "鹿島"];
         let stationsToRender = [];
         if (!areaData) throw new Error("気象庁データが取得できませんでした");
         
@@ -450,13 +287,12 @@ async function init(selectedAreaCodes = ALL_AREA_CODES) {
             box.id = `container-${stInfo.jmaCode}`;
             box.onclick = () => handleCardClick(box);
             box._stInfo = stInfo;
-
+            
             const useZure = zureStations.includes(stInfo.name);
             const legendHtml = useZure 
                 ? `<img src="Image/hanrei.png" alt="凡例"><img src="Image/zure.png" class="zure-overlay" alt="偏差凡例" style="position: absolute; top: 0; left: 0; width: 100%; z-index: 21;">`
                 : `<img src="Image/hanrei.png" alt="凡例">`;
 
-            // 軽量HTML構造（観測所名、ラベル、凡例）は最初から生成しておく
             box.innerHTML = `
                 <div class="scaling-layer">
                     <div class="station-label">${displayName}</div>
@@ -470,46 +306,20 @@ async function init(selectedAreaCodes = ALL_AREA_CODES) {
 
             fragment.appendChild(box);
         }
-
+        
         grid.appendChild(fragment);
 
-        // 沖縄の後にランキングカードを挿入
-        let updateTimeStr = "--:--";
-        try {
-            const timeTxt = await fetchWithProxy('https://www.jma.go.jp/bosai/amedas/data/latest_time.txt');
-            if (timeTxt) updateTimeStr = timeTxt.trim().substring(11, 16);
-        } catch (e) {}
-
-        const rankingTasks = [
-            { mode: 'high_temp', titleType: 'high', label: '最高気温', fallback: 'ranking_high.png' },
-            { mode: 'low_temp', titleType: 'low', label: '最低気温', fallback: 'ranking_low.png' },
-            { mode: 'precip', titleType: 'precip', label: '降水量', fallback: 'ranking_precip.png' }
-        ];
-
-        for (const task of rankingTasks) {
-            let imgSrc = await createRankingCardDataUrl(task.mode, task.titleType, updateTimeStr);
-            if (!imgSrc) imgSrc = task.fallback;
-
-            const rankingCard = document.createElement('div');
-            rankingCard.className = 'graph-box image-box';
-            rankingCard.innerHTML = `<img src="${imgSrc}" alt="${task.label}ランキング" onerror="this.style.display='none'">`;
-            rankingCard.onclick = () => handleCardClick(rankingCard);
-            grid.appendChild(rankingCard);
-        }
-
-        // スマホ対策：重い Canvas (Chart.js) だけを画面の出入りに合わせて動的生成・破棄
+        // 画面入退出の監視と確実な再描画ロジック
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(async (entry) => {
                 const box = entry.target;
-                if (!box._stInfo) return;
-
                 if (entry.isIntersecting) {
-                    if (!box._chartDrawn) {
+                    if (box._stInfo && !box._chartDrawn) {
                         box._chartDrawn = true;
                         box._chartInstance = await drawChart(box._stInfo, yyyy, yyyymmdd, mmdd);
                     }
                 } else {
-                    // 画面外に出たら画素メモリ（Canvas）だけ破棄・リセット
+                    // 画面外に出たらChartを破棄し、canvas要素を完全初期化して次回表示に備える
                     if (box._chartDrawn) {
                         if (box._chartInstance) {
                             box._chartInstance.destroy();
@@ -517,14 +327,15 @@ async function init(selectedAreaCodes = ALL_AREA_CODES) {
                         }
                         box._chartDrawn = false;
                         
+                        // canvas要素を新品に置換することで次回表示時に確実に100%再描画されるようにする
                         const chartLayer = box.querySelector('.chart-layer');
-                        if (chartLayer) {
+                        if (chartLayer && box._stInfo) {
                             chartLayer.innerHTML = `<canvas id="chart-${box._stInfo.jmaCode}"></canvas>`;
                         }
                     }
                 }
             });
-        }, { rootMargin: '400px 0px' });
+        }, { rootMargin: '300px 0px' });
 
         document.querySelectorAll('.graph-box:not(.image-box)').forEach(box => {
             observer.observe(box);
