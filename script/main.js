@@ -14,7 +14,7 @@ let isAnimating = false;
 let housouOffscreenCanvas = null;
 let housouOffscreenCtx = null;
 
-// 全画面表示切り替え中フラグ（切り替え時のチラつき・要素一斉クリア防止）
+// 全画面表示切り替え中フラグ
 let isFullscreenTransitioning = false;
 let resizeTimer = null;
 
@@ -108,7 +108,7 @@ function getAreaNameFromCodes(codes) {
     return map[codes[0]] || '全国';
 }
 
-// 画面最上部にヘッダーを横幅いっぱいに固定表示
+// 画面最上部にヘッダーを横幅いっぱいに固定表示（全画面時も最前面保持）
 function adjustHeaderPosition() {
     const container = document.getElementById('header-image-container');
     if (!container) return;
@@ -129,6 +129,7 @@ function adjustHeaderPosition() {
         img.style.height = 'auto';
         img.style.objectFit = 'fill';
         img.style.pointerEvents = 'none';
+        img.style.display = 'block';
     }
 
     const grid = document.getElementById('tohoku-grid');
@@ -191,7 +192,7 @@ function updateHeaderImage(selectedAreaCodes) {
     adjustHeaderPosition();
 }
 
-// housou.png の最前面配置・不透明領域クリック判定・全画面化＆housoumode.png表示処理
+// housou.png の最前面配置・不透明領域クリック判定処理
 function updateHousouImage() {
     let container = document.getElementById('housou-image-container');
     if (!container) {
@@ -235,14 +236,12 @@ function updateHousouImage() {
 function setupHousouImgElement(img, container) {
     container.innerHTML = '';
 
-    // 裏方のピクセル判定用オフスクリーンキャンバスを準備
     housouOffscreenCanvas = document.createElement('canvas');
     housouOffscreenCanvas.width = img.naturalWidth || 1920;
     housouOffscreenCanvas.height = img.naturalHeight || 1080;
     housouOffscreenCtx = housouOffscreenCanvas.getContext('2d', { willReadFrequently: true });
     housouOffscreenCtx.drawImage(img, 0, 0, housouOffscreenCanvas.width, housouOffscreenCanvas.height);
 
-    // 画面に配置するレスポンシブな <img> 要素
     const displayImg = document.createElement('img');
     displayImg.id = 'housou-display-img';
     displayImg.src = img.src;
@@ -281,16 +280,24 @@ function setupHousouImgElement(img, container) {
     });
 }
 
-function triggerHousouMode() {
-    // 全画面表示に移行
+// 全画面表示化と housoumode.png 演出処理
+async function triggerHousouMode() {
     if (!document.fullscreenElement) {
-        if (document.documentElement.requestFullscreen) {
-            document.documentElement.requestFullscreen().catch(() => {});
-        } else if (document.documentElement.webkitRequestFullscreen) {
-            document.documentElement.webkitRequestFullscreen();
+        try {
+            if (document.documentElement.requestFullscreen) {
+                await document.documentElement.requestFullscreen();
+            } else if (document.documentElement.webkitRequestFullscreen) {
+                await document.documentElement.webkitRequestFullscreen();
+            }
+        } catch (err) {
+            console.warn("Fullscreen request error:", err);
         }
     }
 
+    showHousouModeOverlay();
+}
+
+function showHousouModeOverlay() {
     let modeOverlay = document.getElementById('housoumode-overlay');
     if (!modeOverlay) {
         modeOverlay = document.createElement('div');
@@ -337,7 +344,7 @@ function triggerHousouMode() {
         document.body.appendChild(modeOverlay);
     }
 
-    // 0.5秒フェードイン -> 2.0秒表示 -> 0.5秒フェードアウト（合計3秒）
+    // 0.5秒フェードイン -> 2.0秒表示 -> 0.5秒フェードアウト（計3秒）
     modeOverlay.style.display = 'flex';
     requestAnimationFrame(() => {
         requestAnimationFrame(() => {
@@ -543,7 +550,6 @@ async function init(selectedAreaCodes = ALL_AREA_CODES) {
         const yyyymmdd = yyyy + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
         const mmdd = String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
 
-        // 地盤変動による「ずれ」表示対象の観測所一覧
         const zureStations = ["久慈", "宮古", "釜石", "大船渡", "鮎川", "石巻", "仙台新港", "小名浜", "鹿島"];
         let stationsToRender = [];
         if (!areaData) throw new Error("気象庁データが取得できませんでした");
@@ -598,7 +604,7 @@ async function init(selectedAreaCodes = ALL_AREA_CODES) {
 
                 const mapCard = document.createElement('div');
                 mapCard.className = 'graph-box image-box';
-                mapCard.innerHTML = `<img src="Image/Area/${currentRegion}.png" alt="${currentRegion}広域図" onerror="this.style.display='none'">`;
+                mapCard.innerHTML = `<img src="Image/Area/${currentRegion}.png" alt="${currentRegion}広域図" style="width:100%; height:100%; object-fit:contain; display:block;">`;
                 fragment.appendChild(mapCard);
             }
 
@@ -632,7 +638,6 @@ async function init(selectedAreaCodes = ALL_AREA_CODES) {
         
         grid.appendChild(fragment);
 
-        // 画面入退出の監視と確実な再描画ロジック（全画面移行中の誤作動抑止ガード付き）
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(async (entry) => {
                 const box = entry.target;
@@ -642,7 +647,6 @@ async function init(selectedAreaCodes = ALL_AREA_CODES) {
                         box._chartInstance = await drawChart(box._stInfo, yyyy, yyyymmdd, mmdd);
                     }
                 } else {
-                    // 全画面切り替えの瞬間は一時ガードしてクリアを抑止（背景消え防止）
                     if (box._chartDrawn && !isFullscreenTransitioning) {
                         if (box._chartInstance) {
                             box._chartInstance.destroy();
@@ -665,7 +669,6 @@ async function init(selectedAreaCodes = ALL_AREA_CODES) {
 
         updateScales(); 
 
-        // リサイズおよび全画面表示切り替え（fullscreenchange）時の安定化イベントハンドラ
         const handleResizeOrFullscreen = () => {
             isFullscreenTransitioning = true;
             checkDeviceAndShowOverlay();
