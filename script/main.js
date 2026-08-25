@@ -63,6 +63,7 @@ function checkDeviceAndShowOverlay() {
     } else {
         if (overlay) {
             overlay.style.display = 'none';
+            overlay.style.pointerEvents = 'none';
         }
     }
 }
@@ -105,6 +106,12 @@ function adjustHeaderPosition() {
     const container = document.getElementById('header-image-container');
     if (!container) return;
 
+    if (container.style.display === 'none') {
+        container.style.pointerEvents = 'none';
+    } else {
+        container.style.pointerEvents = 'none';
+    }
+
     container.style.position = 'fixed';
     container.style.top = '0';
     container.style.left = '0';
@@ -113,7 +120,6 @@ function adjustHeaderPosition() {
     container.style.transform = 'none';
     container.style.marginTop = '0px';
     container.style.zIndex = '9999';
-    container.style.pointerEvents = 'none';
 
     const img = document.getElementById('header-img');
     if (img) {
@@ -121,6 +127,9 @@ function adjustHeaderPosition() {
         img.style.height = 'auto';
         img.style.objectFit = 'fill';
         img.style.pointerEvents = 'none';
+        if (img.style.display === 'none') {
+            img.style.pointerEvents = 'none';
+        }
     }
 
     const grid = document.getElementById('tohoku-grid');
@@ -146,6 +155,10 @@ function updateHeaderImage(selectedAreaCodes) {
             document.body.insertBefore(container, document.body.firstChild);
         } else if (document.body) {
             document.body.appendChild(container);
+        }
+    } else {
+        if (container.style.display === 'none') {
+            container.style.pointerEvents = 'none';
         }
     }
 
@@ -190,6 +203,10 @@ function updateHousouImage() {
         container.id = 'housou-image-container';
         container.style.cssText = 'width: 100%; position: fixed; top: 0; left: 0; z-index: 10000; pointer-events: none;';
         document.body.appendChild(container);
+    } else {
+        if (container.style.display === 'none') {
+            container.style.pointerEvents = 'none';
+        }
     }
 
     const paths = [
@@ -227,7 +244,7 @@ function setupHousouCanvas(img, container) {
     container.innerHTML = '';
     const canvas = document.createElement('canvas');
     canvas.id = 'housou-canvas';
-    canvas.style.cssText = 'width: 100%; height: auto; display: block; pointer-events: auto; cursor: pointer;';
+    canvas.style.cssText = 'width: 100%; height: auto; display: block; pointer-events: none; cursor: pointer;';
 
     const renderWidth = img.naturalWidth || 1920;
     const renderHeight = img.naturalHeight || 1080;
@@ -239,12 +256,23 @@ function setupHousouCanvas(img, container) {
 
     container.appendChild(canvas);
 
-    canvas.addEventListener('click', (e) => {
+    function checkOpacityAndSetPointerEvents(clientX, clientY) {
+        if (container.style.display === 'none' || canvas.style.display === 'none') {
+            canvas.style.pointerEvents = 'none';
+            container.style.pointerEvents = 'none';
+            return false;
+        }
+
         const rect = canvas.getBoundingClientRect();
+        if (clientX < rect.left || clientX > rect.right || clientY < rect.top || clientY > rect.bottom) {
+            canvas.style.pointerEvents = 'none';
+            return false;
+        }
+
         const scaleX = canvas.width / rect.width;
         const scaleY = canvas.height / rect.height;
-        const x = Math.floor((e.clientX - rect.left) * scaleX);
-        const y = Math.floor((e.clientY - rect.top) * scaleY);
+        const x = Math.floor((clientX - rect.left) * scaleX);
+        const y = Math.floor((clientY - rect.top) * scaleY);
 
         let isOpaque = false;
         try {
@@ -253,9 +281,24 @@ function setupHousouCanvas(img, container) {
                 isOpaque = true;
             }
         } catch (err) {
-            isOpaque = true;
+            isOpaque = false;
         }
 
+        if (isOpaque) {
+            canvas.style.pointerEvents = 'auto';
+            return true;
+        } else {
+            canvas.style.pointerEvents = 'none';
+            return false;
+        }
+    }
+
+    window.addEventListener('pointermove', (e) => {
+        checkOpacityAndSetPointerEvents(e.clientX, e.clientY);
+    }, { passive: true });
+
+    canvas.addEventListener('click', (e) => {
+        const isOpaque = checkOpacityAndSetPointerEvents(e.clientX, e.clientY);
         if (isOpaque) {
             e.stopPropagation();
             triggerHousouMode();
@@ -265,7 +308,6 @@ function setupHousouCanvas(img, container) {
             if (underlyingEl) {
                 underlyingEl.click();
             }
-            canvas.style.pointerEvents = 'auto';
         }
     });
 }
@@ -311,7 +353,7 @@ function triggerHousouMode() {
 
         let pathIdx = 0;
         const img = document.createElement('img');
-        img.style.cssText = 'width: 100%; height: 100%; object-fit: contain; display: block;';
+        img.style.cssText = 'width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none;';
         img.src = paths[0];
         img.onerror = function() {
             pathIdx++;
@@ -328,6 +370,7 @@ function triggerHousouMode() {
 
     // 0.5秒フェードイン -> 2.0秒表示 -> 0.5秒フェードアウト（合計3秒）
     modeOverlay.style.display = 'flex';
+    modeOverlay.style.pointerEvents = 'none';
     requestAnimationFrame(() => {
         requestAnimationFrame(() => {
             modeOverlay.style.opacity = '1';
@@ -336,10 +379,12 @@ function triggerHousouMode() {
 
     setTimeout(() => {
         modeOverlay.style.opacity = '0';
+        modeOverlay.style.pointerEvents = 'none';
     }, 2300);
 
     setTimeout(() => {
         modeOverlay.style.display = 'none';
+        modeOverlay.style.pointerEvents = 'none';
     }, 3000);
 }
 
