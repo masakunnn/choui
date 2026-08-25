@@ -197,7 +197,7 @@ function closeExpanded() {
     }, CONFIG.animDuration);
 }
 
-// プロキシ通信
+// 複数プロキシを順番に試す堅牢な fetch 関数
 async function fetchWithProxy(targetUrl) {
     const proxies = [
         url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
@@ -445,21 +445,35 @@ async function init(selectedAreaCodes = ALL_AREA_CODES) {
             const entry = Object.values(nhkNames).find(item => item.station_name === stInfo.name);
             const displayName = entry ? entry.nhk_name : stInfo.name;
 
-            // スマホクラッシュ対策：初期状態は完全空枠（DOM・画素メモリ最小限）のみを並べる
             const box = document.createElement('div');
             box.className = 'graph-box';
             box.id = `container-${stInfo.jmaCode}`;
             box.onclick = () => handleCardClick(box);
             box._stInfo = stInfo;
-            box._displayName = displayName;
-            box._useZure = zureStations.includes(stInfo.name);
+
+            const useZure = zureStations.includes(stInfo.name);
+            const legendHtml = useZure 
+                ? `<img src="Image/hanrei.png" alt="凡例"><img src="Image/zure.png" class="zure-overlay" alt="偏差凡例" style="position: absolute; top: 0; left: 0; width: 100%; z-index: 21;">`
+                : `<img src="Image/hanrei.png" alt="凡例">`;
+
+            // 軽量HTML構造（観測所名、ラベル、凡例）は最初から生成しておく
+            box.innerHTML = `
+                <div class="scaling-layer">
+                    <div class="station-label">${displayName}</div>
+                    <div class="agency-label">${stInfo.agency}</div>
+                    <div class="legend-box" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; z-index: 20;">
+                        ${legendHtml}
+                    </div>
+                    <div class="chart-layer"><canvas id="chart-${stInfo.jmaCode}"></canvas></div>
+                    <div id="tooltip-${stInfo.jmaCode}" class="custom-tooltip"></div>
+                </div>`;
 
             fragment.appendChild(box);
         }
 
         grid.appendChild(fragment);
 
-        // 沖縄の後に末尾ランキングカードを追加（遅延生成）
+        // 沖縄の後にランキングカードを挿入
         let updateTimeStr = "--:--";
         try {
             const timeTxt = await fetchWithProxy('https://www.jma.go.jp/bosai/amedas/data/latest_time.txt');
@@ -483,7 +497,7 @@ async function init(selectedAreaCodes = ALL_AREA_CODES) {
             grid.appendChild(rankingCard);
         }
 
-        // スマホ（iOS Safari）用：画面に入る寸前だけ内部DOM・Canvasを動的組み立て・画面外で完全消滅
+        // スマホ対策：重い Canvas (Chart.js) だけを画面の出入りに合わせて動的生成・破棄
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(async (entry) => {
                 const box = entry.target;
@@ -492,38 +506,25 @@ async function init(selectedAreaCodes = ALL_AREA_CODES) {
                 if (entry.isIntersecting) {
                     if (!box._chartDrawn) {
                         box._chartDrawn = true;
-
-                        const legendHtml = box._useZure 
-                            ? `<img src="Image/hanrei.png" alt="凡例"><img src="Image/zure.png" class="zure-overlay" alt="偏差凡例" style="position: absolute; top: 0; left: 0; width: 100%; z-index: 21;">`
-                            : `<img src="Image/hanrei.png" alt="凡例">`;
-
-                        box.innerHTML = `
-                            <div class="scaling-layer">
-                                <div class="station-label">${box._displayName}</div>
-                                <div class="agency-label">${box._stInfo.agency}</div>
-                                <div class="legend-box" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; z-index: 20;">
-                                    ${legendHtml}
-                                </div>
-                                <div class="chart-layer"><canvas id="chart-${box._stInfo.jmaCode}"></canvas></div>
-                                <div id="tooltip-${box._stInfo.jmaCode}" class="custom-tooltip"></div>
-                            </div>`;
-
-                        updateScales();
                         box._chartInstance = await drawChart(box._stInfo, yyyy, yyyymmdd, mmdd);
                     }
                 } else {
-                    // 画面外に出たら完全に中身のDOM・メモリを消し去る
+                    // 画面外に出たら画素メモリ（Canvas）だけ破棄・リセット
                     if (box._chartDrawn) {
                         if (box._chartInstance) {
                             box._chartInstance.destroy();
                             box._chartInstance = null;
                         }
-                        box.innerHTML = ''; // DOMごと完全削除
                         box._chartDrawn = false;
+                        
+                        const chartLayer = box.querySelector('.chart-layer');
+                        if (chartLayer) {
+                            chartLayer.innerHTML = `<canvas id="chart-${box._stInfo.jmaCode}"></canvas>`;
+                        }
                     }
                 }
             });
-        }, { rootMargin: '200px 0px' });
+        }, { rootMargin: '400px 0px' });
 
         document.querySelectorAll('.graph-box:not(.image-box)').forEach(box => {
             observer.observe(box);
