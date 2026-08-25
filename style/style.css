@@ -78,7 +78,7 @@ body {
     background-color: #1e2d32;
     color: white;
     font-size: 50px;
-    font-weight: normal;
+    font-weight: bold;
     padding: 25px 50px;
     margin: 0;
     text-align: left;
@@ -161,7 +161,7 @@ body {
     .tooltip-value {
         margin-left: auto;
         font-size: 100px;
-        font-weight: normal;
+        font-weight: bold;
     }
     .tooltip-unit {
         font-size: 50px;
@@ -200,7 +200,7 @@ body {
     pointer-events: none;
 }
 
-.station-label { position: absolute; top: 120px; width: 100%; text-align: center; font-size: 154px; font-weight: normal; white-space: nowrap; line-height: 1; font-family: sans-serif; }
+.station-label { position: absolute; top: 120px; width: 100%; text-align: center; font-size: 154px; font-weight: bold; white-space: nowrap; line-height: 1; font-family: sans-serif; }
 .station-label::after { content: " 潮位"; }
 
 .agency-label { 
