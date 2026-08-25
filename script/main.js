@@ -19,6 +19,54 @@ const ALL_AREA_CODES = [
 
 const REGION_ORDER = ['北海道', '東北', '関東甲信越', '北陸', '東海', '近畿', '中国', '四国', '九州', '沖縄'];
 
+// PC以外の端末（スマホ・タブレット）判定とメッセージオーバーレイ表示
+function checkDeviceAndShowOverlay() {
+    const isMobileOrTablet = window.innerWidth <= 1024 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    let overlay = document.getElementById('pc-only-overlay');
+
+    if (isMobileOrTablet) {
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'pc-only-overlay';
+            overlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background-color: rgba(0, 0, 0, 0.95);
+                z-index: 999999;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                text-align: center;
+                padding: 20px;
+                box-sizing: border-box;
+            `;
+
+            const message = document.createElement('div');
+            message.style.cssText = `
+                color: #ffffff;
+                font-size: clamp(28px, 7vw, 72px);
+                font-weight: bold;
+                line-height: 1.4;
+                word-break: break-all;
+                font-family: sans-serif;
+            `;
+            message.textContent = 'PCで開いてね！！！！！！！！！';
+
+            overlay.appendChild(message);
+            document.body.appendChild(overlay);
+        } else {
+            overlay.style.display = 'flex';
+        }
+    } else {
+        if (overlay) {
+            overlay.style.display = 'none';
+        }
+    }
+}
+
 function getRegionNameFromAreaCode(areaCode) {
     if (!areaCode) return 'その他';
     const c = areaCode.substring(0, 2);
@@ -199,6 +247,8 @@ function closeExpanded() {
 
 async function init(selectedAreaCodes = ALL_AREA_CODES) {
     try {
+        checkDeviceAndShowOverlay();
+
         if (!selectedAreaCodes || !Array.isArray(selectedAreaCodes) || selectedAreaCodes.length === 0) {
             selectedAreaCodes = ALL_AREA_CODES;
         }
@@ -342,7 +392,10 @@ const zureStations = ["久慈", "宮古", "釜石", "大船渡", "鮎川", "石�
         });
 
         updateScales(); 
-        window.addEventListener('resize', updateScales);
+        window.addEventListener('resize', () => {
+            checkDeviceAndShowOverlay();
+            updateScales();
+        });
         setTimeout(updateScales, 100);
     } catch (e) {
         console.error("初期化中にエラーが発生しました:", e);
@@ -350,6 +403,7 @@ const zureStations = ["久慈", "宮古", "釜石", "大船渡", "鮎川", "石�
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
+    checkDeviceAndShowOverlay();
     await document.fonts.ready;
     
     const params = new URLSearchParams(window.location.search);
