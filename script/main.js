@@ -100,7 +100,7 @@ function getAreaNameFromCodes(codes) {
     return map[codes[0]] || '全国';
 }
 
-// 画面最上部にヘッダーをずっと固定表示（position: fixed）する位置調整処理
+// 画面最上部にヘッダーを最前面（z-index: 3000）で固定表示する処理
 function adjustHeaderPosition() {
     const container = document.getElementById('header-image-container');
     if (!container) return;
@@ -111,7 +111,7 @@ function adjustHeaderPosition() {
     container.style.width = '100%';
     container.style.transform = 'none';
     container.style.marginTop = '0px';
-    container.style.zIndex = '1000';
+    container.style.zIndex = '3000';
     container.style.backgroundColor = '#01162a';
 }
 
@@ -123,7 +123,7 @@ function updateHeaderImage(selectedAreaCodes) {
     if (!container) {
         container = document.createElement('div');
         container.id = 'header-image-container';
-        container.style.cssText = 'width: 100%; text-align: center; margin: 0 auto; position: fixed; top: 0; left: 0; z-index: 1000; background-color: #01162a;';
+        container.style.cssText = 'width: 100%; text-align: center; margin: 0 auto; position: fixed; top: 0; left: 0; z-index: 3000; background-color: #01162a;';
         const grid = document.getElementById('tohoku-grid');
         if (grid && grid.parentNode) {
             grid.parentNode.insertBefore(container, grid);
