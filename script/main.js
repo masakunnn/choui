@@ -270,8 +270,8 @@ async function init(selectedAreaCodes = ALL_AREA_CODES) {
         const yyyymmdd = yyyy + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
         const mmdd = String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0');
 
-// 地盤変動による「ずれ」表示対象の観測所一覧
-const zureStations = ["久慈", "宮古", "釜石", "大船渡", "鮎川", "石巻", "仙台新港", "小名浜", "鹿島"];
+        // 地盤変動による「ずれ」表示対象の観測所一覧
+        const zureStations = ["久慈", "宮古", "釜石", "大船渡", "鮎川", "石巻", "仙台新港", "小名浜", "鹿島"];
         let stationsToRender = [];
         if (!areaData) throw new Error("気象庁データが取得できませんでした");
         
@@ -345,13 +345,13 @@ const zureStations = ["久慈", "宮古", "釜石", "大船渡", "鮎川", "石�
 
             box.innerHTML = `
                 <div class="scaling-layer">
-                    <div class="station-label">${displayName}</div>
-                    <div class="agency-label">${stInfo.agency}</div>
+                    <div class="station-label" style="font-family: sans-serif;">${displayName}</div>
+                    <div class="agency-label" style="font-family: sans-serif;">${stInfo.agency}</div>
                     <div class="legend-box" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100%; z-index: 20;">
                         ${legendHtml}
                     </div>
                     <div class="chart-layer"><canvas id="chart-${stInfo.jmaCode}"></canvas></div>
-                    <div id="tooltip-${stInfo.jmaCode}" class="custom-tooltip"></div>
+                    <div id="tooltip-${stInfo.jmaCode}" class="custom-tooltip" style="font-family: sans-serif;"></div>
                 </div>`;
 
             fragment.appendChild(box);
