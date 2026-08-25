@@ -106,9 +106,10 @@ function adjustHeaderPosition() {
     const container = document.getElementById('header-image-container');
     if (!container) return;
 
-    if (container.style.display === 'none') {
-        container.style.pointerEvents = 'none';
-    } else {
+    const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+
+    if (isFullscreen) {
+        container.style.setProperty('display', 'none', 'important');
         container.style.pointerEvents = 'none';
     }
 
@@ -127,15 +128,19 @@ function adjustHeaderPosition() {
         img.style.height = 'auto';
         img.style.objectFit = 'fill';
         img.style.pointerEvents = 'none';
-        if (img.style.display === 'none') {
-            img.style.pointerEvents = 'none';
+        if (isFullscreen) {
+            img.style.setProperty('display', 'none', 'important');
         }
     }
 
     const grid = document.getElementById('tohoku-grid');
     if (grid) {
-        const calculatedHeaderBarHeight = Math.max(40, Math.round(window.innerWidth * (65 / 1920)));
-        grid.style.marginTop = `${calculatedHeaderBarHeight}px`;
+        if (isFullscreen) {
+            grid.style.marginTop = '0px';
+        } else {
+            const calculatedHeaderBarHeight = Math.max(40, Math.round(window.innerWidth * (65 / 1920)));
+            grid.style.marginTop = `${calculatedHeaderBarHeight}px`;
+        }
     }
 }
 
@@ -155,10 +160,6 @@ function updateHeaderImage(selectedAreaCodes) {
             document.body.insertBefore(container, document.body.firstChild);
         } else if (document.body) {
             document.body.appendChild(container);
-        }
-    } else {
-        if (container.style.display === 'none') {
-            container.style.pointerEvents = 'none';
         }
     }
 
@@ -203,10 +204,6 @@ function updateHousouImage() {
         container.id = 'housou-image-container';
         container.style.cssText = 'width: 100%; position: fixed; top: 0; left: 0; z-index: 10000; pointer-events: none;';
         document.body.appendChild(container);
-    } else {
-        if (container.style.display === 'none') {
-            container.style.pointerEvents = 'none';
-        }
     }
 
     const paths = [
@@ -257,7 +254,8 @@ function setupHousouCanvas(img, container) {
     container.appendChild(canvas);
 
     function checkOpacityAndSetPointerEvents(clientX, clientY) {
-        if (container.style.display === 'none' || canvas.style.display === 'none') {
+        const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+        if (isFullscreen || container.style.display === 'none' || canvas.style.display === 'none') {
             canvas.style.pointerEvents = 'none';
             container.style.pointerEvents = 'none';
             return false;
@@ -312,15 +310,16 @@ function setupHousouCanvas(img, container) {
     });
 }
 
-// 全画面状態の変化を監視し、全画面時は header と housou.png を非表示＆当たり判定0にする処理
+// 全画面状態の変化を監視し、全画面時は header_全国.png と housou.png を非表示にする処理
 function handleFullscreenChange() {
-    const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
+    const isFullscreen = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
     const headerContainer = document.getElementById('header-image-container');
+    const headerImg = document.getElementById('header-img');
     const housouContainer = document.getElementById('housou-image-container');
 
     if (headerContainer) {
         if (isFullscreen) {
-            headerContainer.style.display = 'none';
+            headerContainer.style.setProperty('display', 'none', 'important');
             headerContainer.style.pointerEvents = 'none';
         } else {
             headerContainer.style.display = 'block';
@@ -328,9 +327,17 @@ function handleFullscreenChange() {
         }
     }
 
+    if (headerImg) {
+        if (isFullscreen) {
+            headerImg.style.setProperty('display', 'none', 'important');
+        } else {
+            headerImg.style.display = 'block';
+        }
+    }
+
     if (housouContainer) {
         if (isFullscreen) {
-            housouContainer.style.display = 'none';
+            housouContainer.style.setProperty('display', 'none', 'important');
             housouContainer.style.pointerEvents = 'none';
         } else {
             housouContainer.style.display = 'block';
@@ -734,6 +741,8 @@ async function init(selectedAreaCodes = ALL_AREA_CODES) {
         });
         document.addEventListener('fullscreenchange', handleFullscreenChange);
         document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+        document.addEventListener('MSFullscreenChange', handleFullscreenChange);
         setTimeout(updateScales, 100);
     } catch (e) {
         console.error("初期化中にエラーが発生しました:", e);
