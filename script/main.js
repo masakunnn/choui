@@ -100,7 +100,7 @@ function getAreaNameFromCodes(codes) {
     return map[codes[0]] || '全国';
 }
 
-// 画面最上部にヘッダーを最前面（z-index: 3000）で固定表示する処理
+// 画面最上部にヘッダーを最前面（z-index: 9999）で固定し常にかぶせ続ける処理
 function adjustHeaderPosition() {
     const container = document.getElementById('header-image-container');
     if (!container) return;
@@ -111,8 +111,14 @@ function adjustHeaderPosition() {
     container.style.width = '100%';
     container.style.transform = 'none';
     container.style.marginTop = '0px';
-    container.style.zIndex = '3000';
-    container.style.backgroundColor = '#01162a';
+    container.style.zIndex = '9999';
+
+    // グリッド要素の上にヘッダー画像分の高さマージンを動的調整
+    const grid = document.getElementById('tohoku-grid');
+    if (grid) {
+        const headerHeight = container.offsetHeight || 60;
+        grid.style.marginTop = `${headerHeight + 20}px`;
+    }
 }
 
 // 画面上部にヘッダー画像（header_全国.png など）を表示・更新する処理
@@ -123,7 +129,7 @@ function updateHeaderImage(selectedAreaCodes) {
     if (!container) {
         container = document.createElement('div');
         container.id = 'header-image-container';
-        container.style.cssText = 'width: 100%; text-align: center; margin: 0 auto; position: fixed; top: 0; left: 0; z-index: 3000; background-color: #01162a;';
+        container.style.cssText = 'width: 100%; text-align: center; margin: 0 auto; position: fixed; top: 0; left: 0; z-index: 9999;';
         const grid = document.getElementById('tohoku-grid');
         if (grid && grid.parentNode) {
             grid.parentNode.insertBefore(container, grid);
@@ -151,6 +157,9 @@ function updateHeaderImage(selectedAreaCodes) {
 
     const img = document.getElementById('header-img');
     if (img) {
+        img.onload = function() {
+            adjustHeaderPosition();
+        };
         img.onerror = function() {
             pathIdx++;
             if (pathIdx < paths.length) {
