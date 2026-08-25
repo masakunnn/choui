@@ -123,7 +123,6 @@ function adjustHeaderPosition() {
         img.style.pointerEvents = 'none';
     }
 
-    // グリッド要素の上にヘッダー帯分の適切な余白を設定（FHD 1920x1080 時のヘッダー帯高 約65px）
     const grid = document.getElementById('tohoku-grid');
     if (grid) {
         const calculatedHeaderBarHeight = Math.max(40, Math.round(window.innerWidth * (65 / 1920)));
@@ -181,6 +180,167 @@ function updateHeaderImage(selectedAreaCodes) {
     }
 
     adjustHeaderPosition();
+}
+
+// housou.png の最前面配置・不透明領域クリック判定・全画面化＆housoumode.png表示処理
+function updateHousouImage() {
+    let container = document.getElementById('housou-image-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'housou-image-container';
+        container.style.cssText = 'width: 100%; position: fixed; top: 0; left: 0; z-index: 10000; pointer-events: none;';
+        document.body.appendChild(container);
+    }
+
+    const paths = [
+        'Image/Header/housou.png',
+        'Image/housou.png',
+        'housou.png',
+        'Image/Header/housou.PNG',
+        'Image/housou.PNG',
+        'housou.PNG'
+    ];
+
+    let pathIdx = 0;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+
+    function tryNextPath() {
+        if (pathIdx < paths.length) {
+            img.src = paths[pathIdx];
+        }
+    }
+
+    img.onerror = function() {
+        pathIdx++;
+        tryNextPath();
+    };
+
+    img.onload = function() {
+        setupHousouCanvas(img, container);
+    };
+
+    tryNextPath();
+}
+
+function setupHousouCanvas(img, container) {
+    container.innerHTML = '';
+    const canvas = document.createElement('canvas');
+    canvas.id = 'housou-canvas';
+    canvas.style.cssText = 'width: 100%; height: auto; display: block; pointer-events: auto; cursor: pointer;';
+
+    const renderWidth = img.naturalWidth || 1920;
+    const renderHeight = img.naturalHeight || 1080;
+    canvas.width = renderWidth;
+    canvas.height = renderHeight;
+
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0, renderWidth, renderHeight);
+
+    container.appendChild(canvas);
+
+    canvas.addEventListener('click', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const x = Math.floor((e.clientX - rect.left) * scaleX);
+        const y = Math.floor((e.clientY - rect.top) * scaleY);
+
+        let isOpaque = false;
+        try {
+            const pixel = ctx.getImageData(x, y, 1, 1).data;
+            if (pixel[3] > 10) {
+                isOpaque = true;
+            }
+        } catch (err) {
+            isOpaque = true;
+        }
+
+        if (isOpaque) {
+            e.stopPropagation();
+            triggerHousouMode();
+        } else {
+            canvas.style.pointerEvents = 'none';
+            const underlyingEl = document.elementFromPoint(e.clientX, e.clientY);
+            if (underlyingEl) {
+                underlyingEl.click();
+            }
+            canvas.style.pointerEvents = 'auto';
+        }
+    });
+}
+
+function triggerHousouMode() {
+    // 全画面表示に移行
+    if (!document.fullscreenElement) {
+        if (document.documentElement.requestFullscreen) {
+            document.documentElement.requestFullscreen().catch(() => {});
+        } else if (document.documentElement.webkitRequestFullscreen) {
+            document.documentElement.webkitRequestFullscreen();
+        }
+    }
+
+    let modeOverlay = document.getElementById('housoumode-overlay');
+    if (!modeOverlay) {
+        modeOverlay = document.createElement('div');
+        modeOverlay.id = 'housoumode-overlay';
+        modeOverlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 100000;
+            pointer-events: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            background-color: transparent;
+        `;
+
+        const paths = [
+            'Image/Header/housoumode.png',
+            'Image/housoumode.png',
+            'housoumode.png',
+            'Image/Header/housoumode.PNG',
+            'Image/housoumode.PNG',
+            'housoumode.PNG'
+        ];
+
+        let pathIdx = 0;
+        const img = document.createElement('img');
+        img.style.cssText = 'width: 100%; height: 100%; object-fit: contain; display: block;';
+        img.src = paths[0];
+        img.onerror = function() {
+            pathIdx++;
+            if (pathIdx < paths.length) {
+                this.src = paths[pathIdx];
+            } else {
+                this.onerror = null;
+            }
+        };
+
+        modeOverlay.appendChild(img);
+        document.body.appendChild(modeOverlay);
+    }
+
+    // 0.5秒フェードイン -> 2.0秒表示 -> 0.5秒フェードアウト（合計3秒）
+    modeOverlay.style.display = 'flex';
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            modeOverlay.style.opacity = '1';
+        });
+    });
+
+    setTimeout(() => {
+        modeOverlay.style.opacity = '0';
+    }, 2300);
+
+    setTimeout(() => {
+        modeOverlay.style.display = 'none';
+    }, 3000);
 }
 
 async function startApp(areaCodes, areaName) {
@@ -349,6 +509,7 @@ async function init(selectedAreaCodes = ALL_AREA_CODES) {
     try {
         checkDeviceAndShowOverlay();
         updateHeaderImage(selectedAreaCodes);
+        updateHousouImage();
 
         if (!selectedAreaCodes || !Array.isArray(selectedAreaCodes) || selectedAreaCodes.length === 0) {
             selectedAreaCodes = ALL_AREA_CODES;
