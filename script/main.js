@@ -100,32 +100,52 @@ function getAreaNameFromCodes(codes) {
     return map[codes[0]] || '全国';
 }
 
+// 全画面表示時と通常時（タブバー表示時）の位置調整処理
+function adjustHeaderPosition() {
+    const container = document.getElementById('header-image-container');
+    if (!container) return;
+
+    const isFullscreen = !!document.fullscreenElement;
+
+    if (isFullscreen) {
+        // 全画面表示のときはFHD基準で画面中央にぴったり配置
+        container.style.position = 'fixed';
+        container.style.top = '0';
+        container.style.left = '50%';
+        container.style.transform = 'translateX(-50%)';
+        container.style.marginTop = '0px';
+        container.style.zIndex = '100';
+    } else {
+        // タブバーが出ている通常時はタブバー分位置を少し下げる
+        container.style.position = 'relative';
+        container.style.top = '0';
+        container.style.left = '0';
+        container.style.transform = 'none';
+        container.style.marginTop = '40px'; // タブバー表示時の下げる量（必要に応じて調整可能）
+        container.style.zIndex = 'auto';
+    }
+}
+
 // 画面上部にヘッダー画像（header_全国.png など）を表示・更新する処理
 function updateHeaderImage(selectedAreaCodes) {
     const areaName = getAreaNameFromCodes(selectedAreaCodes);
-    const headerImg = document.getElementById('header-img');
+    let container = document.getElementById('header-image-container');
 
-    if (headerImg) {
-        headerImg.src = `Image/Header/header_${areaName}.png`;
-        headerImg.onerror = function() {
-            this.onerror = null;
-            this.src = `header_${areaName}.png`;
-        };
-    } else {
-        let container = document.getElementById('header-image-container');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'header-image-container';
-            container.style.cssText = 'width: 100%; text-align: center; margin: 0 auto;';
-            const grid = document.getElementById('tohoku-grid');
-            if (grid && grid.parentNode) {
-                grid.parentNode.insertBefore(container, grid);
-            } else {
-                document.body.insertBefore(container, document.body.firstChild);
-            }
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'header-image-container';
+        container.style.cssText = 'width: 100%; text-align: center; margin: 0 auto; transition: margin-top 0.2s ease;';
+        const grid = document.getElementById('tohoku-grid');
+        if (grid && grid.parentNode) {
+            grid.parentNode.insertBefore(container, grid);
+        } else {
+            document.body.insertBefore(container, document.body.firstChild);
         }
-        container.innerHTML = `<img id="header-img" src="Image/Header/header_${areaName}.png" alt="ヘッダー ${areaName}" style="width: 100%; max-width: 100%; height: auto; display: block; margin: 0 auto;" onerror="this.onerror=null; this.src='header_${areaName}.png';">`;
     }
+
+    container.innerHTML = `<img id="header-img" src="Image/Header/header_${areaName}.png" alt="ヘッダー ${areaName}" style="width: 100%; max-width: 100%; height: auto; display: block; margin: 0 auto;" onerror="this.onerror=null; this.src='header_${areaName}.png';">`;
+
+    adjustHeaderPosition();
 }
 
 async function startApp(areaCodes, areaName) {
@@ -440,8 +460,10 @@ async function init(selectedAreaCodes = ALL_AREA_CODES) {
         updateScales(); 
         window.addEventListener('resize', () => {
             checkDeviceAndShowOverlay();
+            adjustHeaderPosition();
             updateScales();
         });
+        document.addEventListener('fullscreenchange', adjustHeaderPosition);
         setTimeout(updateScales, 100);
     } catch (e) {
         console.error("初期化中にエラーが発生しました:", e);
