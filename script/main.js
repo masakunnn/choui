@@ -83,6 +83,51 @@ function getRegionNameFromAreaCode(areaCode) {
     return 'その他';
 }
 
+function getAreaNameFromCodes(codes) {
+    if (!codes || !Array.isArray(codes) || codes.length === 0 || codes.length > 10) return '全国';
+    const map = {
+        '01': '北海道',
+        '02': '東北', '03': '東北', '04': '東北', '05': '東北', '06': '東北', '07': '東北',
+        '08': '関東甲信越', '12': '関東甲信越', '13': '関東甲信越', '14': '関東甲信越', '15': '関東甲信越',
+        '16': '北陸', '17': '北陸', '18': '北陸',
+        '22': '東海', '23': '東海', '24': '東海',
+        '26': '近畿', '27': '近畿', '28': '近畿', '30': '近畿',
+        '31': '中国', '32': '中国', '33': '中国', '34': '中国', '35': '中国',
+        '36': '四国', '37': '四国', '38': '四国', '39': '四国',
+        '40': '九州', '41': '九州', '42': '九州', '43': '九州', '44': '九州', '45': '九州', '46': '九州',
+        '47': '沖縄',
+    };
+    return map[codes[0]] || '全国';
+}
+
+// 画面上部にヘッダー画像（header_全国.png など）を表示・更新する処理
+function updateHeaderImage(selectedAreaCodes) {
+    const areaName = getAreaNameFromCodes(selectedAreaCodes);
+    const headerImg = document.getElementById('header-img');
+
+    if (headerImg) {
+        headerImg.src = `Image/Header/header_${areaName}.png`;
+        headerImg.onerror = function() {
+            this.onerror = null;
+            this.src = `header_${areaName}.png`;
+        };
+    } else {
+        let container = document.getElementById('header-image-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'header-image-container';
+            container.style.cssText = 'width: 100%; text-align: center; margin: 0 auto;';
+            const grid = document.getElementById('tohoku-grid');
+            if (grid && grid.parentNode) {
+                grid.parentNode.insertBefore(container, grid);
+            } else {
+                document.body.insertBefore(container, document.body.firstChild);
+            }
+        }
+        container.innerHTML = `<img id="header-img" src="Image/Header/header_${areaName}.png" alt="ヘッダー ${areaName}" style="width: 100%; max-width: 100%; height: auto; display: block; margin: 0 auto;" onerror="this.onerror=null; this.src='header_${areaName}.png';">`;
+    }
+}
+
 async function startApp(areaCodes, areaName) {
     const menu = document.getElementById('selection-menu');
     if (menu) menu.style.display = 'none';
@@ -248,6 +293,7 @@ function closeExpanded() {
 async function init(selectedAreaCodes = ALL_AREA_CODES) {
     try {
         checkDeviceAndShowOverlay();
+        updateHeaderImage(selectedAreaCodes);
 
         if (!selectedAreaCodes || !Array.isArray(selectedAreaCodes) || selectedAreaCodes.length === 0) {
             selectedAreaCodes = ALL_AREA_CODES;
