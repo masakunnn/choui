@@ -100,7 +100,7 @@ function getAreaNameFromCodes(codes) {
     return map[codes[0]] || '全国';
 }
 
-// 画面最上部にヘッダーを最前面（z-index: 9999）で固定し常にかぶせ続ける処理
+// 画面最上部にヘッダーを固定表示しつつ、下のカードをクリック可能（pointer-events: none）にする処理
 function adjustHeaderPosition() {
     const container = document.getElementById('header-image-container');
     if (!container) return;
@@ -112,11 +112,13 @@ function adjustHeaderPosition() {
     container.style.transform = 'none';
     container.style.marginTop = '0px';
     container.style.zIndex = '9999';
+    container.style.pointerEvents = 'none';
 
-    // グリッド要素の上にヘッダー画像分の高さマージンを動的調整
+    // グリッド要素の上にヘッダー画像分の高さマージンを正確に適用
     const grid = document.getElementById('tohoku-grid');
     if (grid) {
-        const headerHeight = container.offsetHeight || 60;
+        const img = document.getElementById('header-img');
+        const headerHeight = (img && img.offsetHeight > 0) ? img.offsetHeight : 0;
         grid.style.marginTop = `${headerHeight + 20}px`;
     }
 }
@@ -129,7 +131,7 @@ function updateHeaderImage(selectedAreaCodes) {
     if (!container) {
         container = document.createElement('div');
         container.id = 'header-image-container';
-        container.style.cssText = 'width: 100%; text-align: center; margin: 0 auto; position: fixed; top: 0; left: 0; z-index: 9999;';
+        container.style.cssText = 'width: 100%; text-align: center; margin: 0 auto; position: fixed; top: 0; left: 0; z-index: 9999; pointer-events: none;';
         const grid = document.getElementById('tohoku-grid');
         if (grid && grid.parentNode) {
             grid.parentNode.insertBefore(container, grid);
@@ -153,7 +155,7 @@ function updateHeaderImage(selectedAreaCodes) {
     ];
 
     let pathIdx = 0;
-    container.innerHTML = `<img id="header-img" src="${paths[0]}" alt="ヘッダー ${areaName}" style="width: 100%; max-width: 100%; height: auto; display: block; margin: 0 auto;">`;
+    container.innerHTML = `<img id="header-img" src="${paths[0]}" alt="ヘッダー ${areaName}" style="width: 100%; max-width: 100%; height: auto; display: block; margin: 0 auto; pointer-events: none;">`;
 
     const img = document.getElementById('header-img');
     if (img) {
