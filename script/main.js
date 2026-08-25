@@ -10,14 +10,6 @@ let expandedElement = null;
 let placeholderElement = null;
 let isAnimating = false;
 
-// housou.png 用のメモリ内キャンバス参照
-let housouOffscreenCanvas = null;
-let housouOffscreenCtx = null;
-
-// 全画面表示切り替え中フラグ（切り替え時のチラつき・要素一斉クリア防止）
-let isFullscreenTransitioning = false;
-let resizeTimer = null;
-
 const ALL_AREA_CODES = [
     '01', '02', '03', '04', '05', '06', '07', '08', '12', '13', '14', '15',
     '16', '17', '18', '22', '23', '24', '26', '27', '28', '30', '31', '32',
@@ -108,7 +100,7 @@ function getAreaNameFromCodes(codes) {
     return map[codes[0]] || '全国';
 }
 
-// 画面最上部にヘッダーを横幅いっぱいに固定表示
+// 画面最上部にヘッダーを横幅いっぱいに固定表示（左右隙間なし）する処理
 function adjustHeaderPosition() {
     const container = document.getElementById('header-image-container');
     if (!container) return;
@@ -133,7 +125,6 @@ function adjustHeaderPosition() {
 
     const grid = document.getElementById('tohoku-grid');
     if (grid) {
-        grid.style.transition = 'margin-top 0.1s ease';
         const calculatedHeaderBarHeight = Math.max(40, Math.round(window.innerWidth * (65 / 1920)));
         grid.style.marginTop = `${calculatedHeaderBarHeight}px`;
     }
@@ -226,40 +217,38 @@ function updateHousouImage() {
     };
 
     img.onload = function() {
-        setupHousouImgElement(img, container);
+        setupHousouCanvas(img, container);
     };
 
     tryNextPath();
 }
 
-function setupHousouImgElement(img, container) {
+function setupHousouCanvas(img, container) {
     container.innerHTML = '';
+    const canvas = document.createElement('canvas');
+    canvas.id = 'housou-canvas';
+    canvas.style.cssText = 'width: 100%; height: auto; display: block; pointer-events: auto; cursor: pointer;';
 
-    // 裏方のピクセル判定用オフスクリーンキャンバスを準備
-    housouOffscreenCanvas = document.createElement('canvas');
-    housouOffscreenCanvas.width = img.naturalWidth || 1920;
-    housouOffscreenCanvas.height = img.naturalHeight || 1080;
-    housouOffscreenCtx = housouOffscreenCanvas.getContext('2d', { willReadFrequently: true });
-    housouOffscreenCtx.drawImage(img, 0, 0, housouOffscreenCanvas.width, housouOffscreenCanvas.height);
+    const renderWidth = img.naturalWidth || 1920;
+    const renderHeight = img.naturalHeight || 1080;
+    canvas.width = renderWidth;
+    canvas.height = renderHeight;
 
-    // 画面に配置するレスポンシブな <img> 要素
-    const displayImg = document.createElement('img');
-    displayImg.id = 'housou-display-img';
-    displayImg.src = img.src;
-    displayImg.style.cssText = 'width: 100%; height: auto; object-fit: fill; display: block; pointer-events: auto; cursor: pointer;';
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0, renderWidth, renderHeight);
 
-    container.appendChild(displayImg);
+    container.appendChild(canvas);
 
-    displayImg.addEventListener('click', (e) => {
-        const rect = displayImg.getBoundingClientRect();
-        const scaleX = housouOffscreenCanvas.width / rect.width;
-        const scaleY = housouOffscreenCanvas.height / rect.height;
+    canvas.addEventListener('click', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
         const x = Math.floor((e.clientX - rect.left) * scaleX);
         const y = Math.floor((e.clientY - rect.top) * scaleY);
 
         let isOpaque = false;
         try {
-            const pixel = housouOffscreenCtx.getImageData(x, y, 1, 1).data;
+            const pixel = ctx.getImageData(x, y, 1, 1).data;
             if (pixel[3] > 10) {
                 isOpaque = true;
             }
@@ -271,12 +260,12 @@ function setupHousouImgElement(img, container) {
             e.stopPropagation();
             triggerHousouMode();
         } else {
-            displayImg.style.pointerEvents = 'none';
+            canvas.style.pointerEvents = 'none';
             const underlyingEl = document.elementFromPoint(e.clientX, e.clientY);
             if (underlyingEl) {
                 underlyingEl.click();
             }
-            displayImg.style.pointerEvents = 'auto';
+            canvas.style.pointerEvents = 'auto';
         }
     });
 }
@@ -632,7 +621,7 @@ async function init(selectedAreaCodes = ALL_AREA_CODES) {
         
         grid.appendChild(fragment);
 
-        // 画面入退出の監視と確実な再描画ロジック（全画面移行中の誤作動抑止ガード付き）
+        // 画面入退出の監視と確実な再描画ロジック
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(async (entry) => {
                 const box = entry.target;
@@ -642,14 +631,15 @@ async function init(selectedAreaCodes = ALL_AREA_CODES) {
                         box._chartInstance = await drawChart(box._stInfo, yyyy, yyyymmdd, mmdd);
                     }
                 } else {
-                    // 全画面切り替えの瞬間は一時ガードしてクリアを抑止（背景消え防止）
-                    if (box._chartDrawn && !isFullscreenTransitioning) {
+                    // 画面外に出たらChartを破棄し、canvas要素を完全初期化して次回表示に備える
+                    if (box._chartDrawn) {
                         if (box._chartInstance) {
                             box._chartInstance.destroy();
                             box._chartInstance = null;
                         }
                         box._chartDrawn = false;
                         
+                        // canvas要素を新品に置換することで次回表示時に確実に100%再描画されるようにする
                         const chartLayer = box.querySelector('.chart-layer');
                         if (chartLayer && box._stInfo) {
                             chartLayer.innerHTML = `<canvas id="chart-${box._stInfo.jmaCode}"></canvas>`;
@@ -664,25 +654,13 @@ async function init(selectedAreaCodes = ALL_AREA_CODES) {
         });
 
         updateScales(); 
-
-        // リサイズおよび全画面表示切り替え（fullscreenchange）時の安定化イベントハンドラ
-        const handleResizeOrFullscreen = () => {
-            isFullscreenTransitioning = true;
+        window.addEventListener('resize', () => {
             checkDeviceAndShowOverlay();
             adjustHeaderPosition();
             updateScales();
-
-            if (resizeTimer) clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(() => {
-                adjustHeaderPosition();
-                updateScales();
-                isFullscreenTransitioning = false;
-            }, 300);
-        };
-
-        window.addEventListener('resize', handleResizeOrFullscreen);
-        document.addEventListener('fullscreenchange', handleResizeOrFullscreen);
-        setTimeout(handleResizeOrFullscreen, 100);
+        });
+        document.addEventListener('fullscreenchange', adjustHeaderPosition);
+        setTimeout(updateScales, 100);
     } catch (e) {
         console.error("初期化中にエラーが発生しました:", e);
     }
