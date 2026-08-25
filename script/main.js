@@ -2,7 +2,7 @@ const CONFIG = {
     marginRatio: 0.90,
     aspectRatio: 16/9,
     animDuration: 700,
-    fontName: "'RodinNTLG-DB', 'RodinNTLG-B', sans-serif"
+    fontName: "sans-serif"
 };
 
 const targetStationNames = ["青森", "青森港", "八戸港", "下北", "深浦", "竜飛", "むつ小川原", "秋田", "宮古", "大船渡", "釜石", "久慈", "石巻", "仙台新港", "鮎川", "酒田", "小名浜"];
