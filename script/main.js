@@ -100,7 +100,7 @@ function getAreaNameFromCodes(codes) {
     return map[codes[0]] || '全国';
 }
 
-// 画面最上部にヘッダーを固定表示しつつ、下のカードをクリック可能（pointer-events: none）にする処理
+// 画面最上部にヘッダーを16:9で全画面カバーしつつ、下のカードをクリック可能（pointer-events: none）にする処理
 function adjustHeaderPosition() {
     const container = document.getElementById('header-image-container');
     if (!container) return;
@@ -108,18 +108,29 @@ function adjustHeaderPosition() {
     container.style.position = 'fixed';
     container.style.top = '0';
     container.style.left = '0';
-    container.style.width = '100%';
+    container.style.width = '100vw';
+    container.style.height = '100vh';
     container.style.transform = 'none';
     container.style.marginTop = '0px';
     container.style.zIndex = '9999';
     container.style.pointerEvents = 'none';
+    container.style.display = 'flex';
+    container.style.justifyContent = 'center';
+    container.style.alignItems = 'flex-start';
 
-    // グリッド要素の上にヘッダー画像分の高さマージンを正確に適用
+    const img = document.getElementById('header-img');
+    if (img) {
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'contain';
+        img.style.pointerEvents = 'none';
+    }
+
+    // グリッド要素の上にヘッダー帯分の適切な余白を設定（FHD 1920x1080 時のヘッダー帯高 約65px）
     const grid = document.getElementById('tohoku-grid');
     if (grid) {
-        const img = document.getElementById('header-img');
-        const headerHeight = (img && img.offsetHeight > 0) ? img.offsetHeight : 0;
-        grid.style.marginTop = `${headerHeight + 20}px`;
+        const calculatedHeaderBarHeight = Math.max(50, Math.round(window.innerWidth * (65 / 1920)));
+        grid.style.marginTop = `${calculatedHeaderBarHeight}px`;
     }
 }
 
@@ -131,7 +142,7 @@ function updateHeaderImage(selectedAreaCodes) {
     if (!container) {
         container = document.createElement('div');
         container.id = 'header-image-container';
-        container.style.cssText = 'width: 100%; text-align: center; margin: 0 auto; position: fixed; top: 0; left: 0; z-index: 9999; pointer-events: none;';
+        container.style.cssText = 'width: 100vw; height: 100vh; position: fixed; top: 0; left: 0; z-index: 9999; pointer-events: none; display: flex; justify-content: center; align-items: flex-start;';
         const grid = document.getElementById('tohoku-grid');
         if (grid && grid.parentNode) {
             grid.parentNode.insertBefore(container, grid);
@@ -155,7 +166,7 @@ function updateHeaderImage(selectedAreaCodes) {
     ];
 
     let pathIdx = 0;
-    container.innerHTML = `<img id="header-img" src="${paths[0]}" alt="ヘッダー ${areaName}" style="width: 100%; max-width: 100%; height: auto; display: block; margin: 0 auto; pointer-events: none;">`;
+    container.innerHTML = `<img id="header-img" src="${paths[0]}" alt="ヘッダー ${areaName}" style="width: 100%; height: 100%; object-fit: contain; pointer-events: none; display: block; margin: 0 auto;">`;
 
     const img = document.getElementById('header-img');
     if (img) {
